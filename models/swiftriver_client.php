@@ -88,24 +88,26 @@ class Swiftriver_Client_Model extends ORM {
 		// Get drop and location hashes - to be used for duplicity checks
 		$drop_keys = array();
 		$locations = array();
-		$drop_ids = array();
 
 		foreach ($drops as $drop)
 		{
-			$drop_keys[$drop['droplet_hash']] = $drop;
-			$drop_ids[] = $drop['id'];
+			// If drop has no 'place_hash' property skip
+			if ( ! array_key_exists('place_hash', $drop))
+				continue;
 			
+			$drop_keys[$drop['droplet_hash']] = $drop;
+
 			// Get the locations
 			if ( ! array_key_exists($drop['place_hash'], $locations))
 			{
 				$locations[$drop['place_hash']] = array(
-					'location_name' => $db->escape_str($drop['place_name']),
+					'location_name' => $drop['place_name'],
 					'latitude' => $drop['latitude'],
 					'longitude' => $drop['longitude']
 				);
 			}
 		}
-		
+
 		Kohana::log("info", sprintf("Found %d unique locations in the drop payload", count($locations)));
 
 		// Get the drop hashes
@@ -143,7 +145,7 @@ class Swiftriver_Client_Model extends ORM {
 		// When no new drops are found, abort
 		if ( ! count($new_drop_keys))
 		{
-			Kohana::log("info", "No new drops found. Exiting...");
+			Kohana::log("info", "No new drops found. Aborting.");
 			self::release_mutex();
 
 			return TRUE;
@@ -188,7 +190,8 @@ class Swiftriver_Client_Model extends ORM {
 				$new_locations_hash_map[$hash] = $id;
 			
 				$entry = $locations[$hash];
-				$locations_value_list[] = sprintf("(%d, '%s', %s, %s, %s, '%s', '%s')", $id, $entry['location_name'],
+				$locations_value_list[] = sprintf("(%d, '%s', %s, %s, %s, '%s', '%s')", 
+				    $id, $db->escape_str($entry['location_name']),
 				    $entry['latitude'], $entry['longitude'], 1, gmdate("Y-m-d H:i:s"), $hash);
 			}
 
@@ -343,10 +346,11 @@ class Swiftriver_Client_Model extends ORM {
 			Kohana::log("error", $e->getMessage());
 			return FALSE;
 		}
-		
 
 		// Release the database lock
 		self::release_mutex();
+
+		Kohana::log("info", "Drops successfully posted and created as incidents");
 
 		// Return the drop ids
 		return TRUE;

@@ -75,7 +75,9 @@ class Swiftriver_Controller extends Template_Controller {
 
 				// Compute SHA256 hash_hmac of the request data - use client's private key
 				$server_checksum = $this->_get_request_hash($client_orm->client_secret, $post->drops);
-		
+				
+				Kohana::log("debug", sprintf("Server-computed checksum: %s", $server_checksum));
+
 				// Compare the two hash_hmac values - submitted vs computed
 				// if ($server_checksum !== $post->checksum)
 				// {
@@ -104,8 +106,6 @@ class Swiftriver_Controller extends Template_Controller {
 						    "status" => "OK",
 						    "message" => "Drops successfully posted"
 						));
-				
-						Kohana::log("info", "Drops successfully posted and created as incidents");
 					}
 					else
 					{

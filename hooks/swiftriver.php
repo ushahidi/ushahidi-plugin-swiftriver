@@ -101,4 +101,3 @@ class swiftriver {
 // Initiliaze the hook
 // 
 swiftriver::init();
-error_reporting(E_ALL);
