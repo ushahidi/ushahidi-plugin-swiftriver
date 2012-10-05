@@ -33,6 +33,20 @@ class Swiftriver_Client_Model extends ORM {
 	 * @var string
 	 */
 	protected $table_name = 'swiftriver_clients';
+	
+	/**
+	 * Overrides the default save behaviour
+	 */
+	public function save()
+	{
+		if ( ! $this->loaded)
+		{
+			$this->client_id = text::random('alnum', 25);
+			$this->client_secret = hash_hmac("sha256", text::random('alnum', 40), text::random('alnum', 20));
+		}
+
+		return parent::save();
+	}
 
 	/**
 	 * Retrieves a client record using the client_id field
@@ -48,31 +62,7 @@ class Swiftriver_Client_Model extends ORM {
 
 		return $client_orm->loaded ? $client_orm : FALSE;		
 	}
-	
-	/**
-	 * Registers a new SwiftRiver client
-	 * @param   int    $user_id ID of the user registering a SwiftRiver deployment 
-	 * @param   Validation  $validation Validation object that has already run validation checks against the client name and client url
-	 * @return  Swiftriver_Client_Model
-	 */
-	public static function add_client($user_id, $validation)
-	{
-		$client_orm = new Swiftriver_Client_Model();
 
-		$client_orm->user_id = $user_id;
-		$client_orm->client_name = $validation->client_name;
-		$client_orm->client_url = $validation->client_url;
-
-		// Generate client ID - 20byte hash
-		$client_orm->client_id = text::random('alnum', 25);
-
-		// Generate client secret - 40byte hash
-		$client_secret = hash_hmac("sha256", text::random('alnum', 40), text::random('alnum', 20));
-		$client_orm->client_secret = $client_secret;
-		
-		return $client_orm->save();
-	}
-	
 	/**
 	 * Creates reports from drops
 	 *
@@ -229,9 +219,9 @@ class Swiftriver_Client_Model extends ORM {
 			$user_id = $client_orm->user_id;
 
 			// Incident values
-			$entry = sprintf("(%d, %d, %d, '%s', '%s', '%s', %d, %d, %d, '%s', '%s')",
+			$entry = sprintf("(%d, %d, %d, '%s', '%s', '%s', %d, %d, '%s', '%s')",
 			    $incident_id, $location_id, $user_id, $db->escape_str($drop['droplet_title']),
-			    $db->escape_str($drop['droplet_content']), $drop['droplet_date_add'], 5, 1, 0,
+			    $db->escape_str($drop['droplet_content']), $drop['droplet_date_add'], 1, 0,
 			    date('Y-m-d H:i:s'), gmdate('Y-m-d H:i:s')
 			);
 
@@ -249,7 +239,7 @@ class Swiftriver_Client_Model extends ORM {
 			// Template query for creating the incidents
 			$incidents_query = "INSERT INTO `incident` "
 			    . "(`id`, `location_id`, `user_id`, `incident_title`, `incident_description`,"
-			    . "`incident_date`,  `incident_mode`, `incident_active`, `incident_verified`, `incident_dateadd`, "
+			    . "`incident_date`, `incident_active`, `incident_verified`, `incident_dateadd`, "
 			    . "`incident_dateadd_gmt`) "
 			    . "VALUES %s";
 

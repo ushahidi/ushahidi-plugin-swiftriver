@@ -46,7 +46,7 @@ class swiftriver {
 		Kohana::log('info', "Registering swifriver event callbacks");
 
 		// When a report (incident) is displayed on the frontend
-		Event::add('ushahidi_action.report_meta', array($this, 'frontend_display_report'));
+		Event::add('ushahidi_action.report_meta', array($this, 'display_drop_metadata'));
 		
 		// When a report is displayed on the admin console
 		// Event::add('ushahidi_action', array($this, 'admin_display_report'));
@@ -54,14 +54,14 @@ class swiftriver {
 		// Styling for this plugin's settings pages
 		if (Router::$controller === 'swiftriver_settings')
 		{
-			Event::add('ushahidi_action.header_scripts_admin', array($this, 'swiftriver_settings_css'));
+			Event::add('ushahidi_action.header_scripts_admin', array($this, 'swiftriver_settings_assets'));
 		}
 	}
 	
 	/**
 	 * Executed when a report is displayed on the frontend
 	 */
-	public function frontend_display_report()
+	public function display_drop_metadata()
 	{
 		// 	Get the incident id
 		$incident_id = Event::$data;
@@ -70,10 +70,17 @@ class swiftriver {
 		if (($drop = Swiftriver_Drop_Incident_Model::get_by_incident_id($incident_id)) !== FALSE)
 		{
 			// Load the view
-			//$metadata_view  = View::factory('reports/drop_metadata');
-			
+			$metadata_view  = View::factory('reports/drop_metadata')
+			   ->bind("metadata", $metadata);
+
+			// Sanitize the the payload - Remove double newline characters
+			$sanitized = preg_replace("/(\\n)+/m", "\\n", $drop->metadata);
+
+			// Get the metadata
+			$metadata = json_decode($sanitized, TRUE);
+
 			// Render the view
-			// $metadata_view->render();
+			$metadata_view->render(TRUE);
 		}
 	}
 	
@@ -88,8 +95,14 @@ class swiftriver {
 	/**
 	 * Styling for the SwiftRiver plugin settings page
 	 */
-	public function swiftriver_settings_css()
+	public function swiftriver_settings_assets()
 	{
+		 // Backbone JS (+underscore)
+		echo html::script(array(
+		    'plugins/swiftriver/media/js/underscore-min',
+		    'plugins/swiftriver/media/js/backbone-min'
+		));
+
 		View::factory('admin/swiftriver/settings_css')
 		    ->render(TRUE);
 	}

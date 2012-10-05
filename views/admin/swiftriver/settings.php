@@ -1,15 +1,31 @@
 <div class="swiftriver">
 
+	<?php if (isset($errors)): ?>
+	<div class="red-box">
+		<h3><?php echo Kohana::lang('ui_main.error'); ?></h3>
+		<ul>
+		<?php foreach ($errors as $error => $description): ?>
+			<li><?php echo $description; ?></li>
+		<?php endforeach; ?>
+		</ul>
+	</div>
+	<?php endif; ?>
+	
+	<?php if ($form_saved): ?>
+	<div class="green-box">
+		<h3><?php echo Kohana::lang('swiftriver.client_saved'); ?></h3>
+	</div>
+	<?php endif; ?>
+
 	<!-- tabs -->
 	<div class="tabs">
 		<a name="add"></a>
 		<ul class="tabset">
-			<li><a href="#" class="active"><?php echo Kohana::lang("ui_main.add_edit"); ?></a></li>
+			<li><a href="#" class="active edit"><?php echo Kohana::lang("ui_main.add_edit"); ?></a></li>
 		</ul>
 
 		<div class="tab" id="addedit" style="display:none;">
-			<?php echo form::open(); ?>
-			<?php echo form::close(); ?>
+			<div class="edit-form-holder"></div>
 		</div>
 	</div>
 	<!-- /tabs -->
@@ -17,7 +33,7 @@
 	<?php echo form::open(); ?>
 	<table class="table client-list">
 		<tr>
-			<th class="col-1"><?php echo form::checkbox("all_clients"); ?></th>
+			<th class="col-1"></th>
 			<th class="col-2"><?php echo Kohana::lang("swiftriver.client_name"); ?></th>
 			<th class="col-3"><?php echo Kohana::lang("swiftriver.client_url"); ?></th>
 			<th class="col-4"><?php echo Kohana::lang("ui_admin.actions"); ?></th>
@@ -32,13 +48,6 @@
 	<?php echo form::close(); ?>
 </div>
 
-<?php
-	 // Backbone JS (+underscore)
-	echo html::script(array(
-	    'plugins/swiftriver/media/js/underscore-min',
-	    'plugins/swiftriver/media/js/backbone-min'
-	));
-?>
 
 <script type="text/template" id="client-item-template">
 	<td class="col-1"><input type="checkbox" name="client_id"></td>
@@ -72,6 +81,8 @@
 
 <!-- template for the client details -->
 <script type="text/template" id="client-details-template">
+<?php echo form::open(); ?>
+	<input type="hidden" name="id" value="<%= id%>">
 	<div class="tab_form_item">
 		<strong><?php echo Kohana::lang("swiftriver.client_name"); ?></strong><br/>
 		<input type="text" name="client_name" value="<%= client_name%>" class="text" />
@@ -85,6 +96,7 @@
 	<div class="tab_form_item">
 		<input type="submit" class="save-rep-btn" value="<?php echo Kohana::lang('ui_main.save'); ?>"/>
 	</div>
+<?php echo form::close(); ?>
 </script>
 
 
@@ -100,7 +112,7 @@
 		// Collection of clients (client models)
 		var ClientsList = Backbone.Collection.extend({
 			model: Client,
-			url: "<?php echo $action_url; ?>"
+			url: "<?php echo $action_url; ?>",
 		});
 	
 		// Declare the client listing 
@@ -109,7 +121,7 @@
 		// Client details form
 		var ClientDetailsView = Backbone.View.extend({
 
-			el: "#addedit form",
+			tagName: "div",
 			
 			template: _.template($("#client-details-template").html()),
 			
@@ -118,14 +130,14 @@
 
 			render: function() {
 				var modelJSON = this.model.toJSON();
-				if (modelJSON.id !== undefined || modelJSON.id !== null) {
-					this.$el.append(this.authTemplate(modelJSON));
+				if (modelJSON.id !== null || modelJSON.id !== null) {
+					this.$el.html(this.authTemplate(modelJSON));
 				}
 
 				this.$el.append(this.template(modelJSON));
-				
 				return this;
 			},
+			
 		});
 
 		// Single client list item view
@@ -135,41 +147,6 @@
 		
 			template: _.template($("#client-item-template").html()),
 			
-			// Events
-			events: {
-				// Edit link clicked
-				"click .col-4 a.edit": "edit",
-			
-				// Delete button clicked
-				"click .col-4 a.del": "delete"
-			},
-		
-			edit: function(e) {
-				// Show add/edit form
-				console.log("editing...");
-				var view = new ClientDetailsView({model: this.model});
-				
-				$("div#addedit form").html(view.render().el);
-				$("div#addedit").slideDown();
-
-				return false;
-			},
-		
-			delete: function(e) {
-				var view = this;
-
-				// Delete the client record
-				this.model.destroy({
-					wait: true,
-					success: function(response) {
-						view.remove();
-						// Show message
-					}
-				});
-
-				return false;
-			},
-		
 			render: function() {
 				this.$el.html(this.template(this.model.toJSON()));
 				return this;
@@ -187,17 +164,74 @@
 				// Checks if the clients list is empty
 				swiftriverClients.on("reset", this.checkEmpty, this);
 				swiftriverClients.on("add", this.checkEmpty, this);
+
+				var context = this;
+				this.$("a.edit").toggle(function(){
+					// Initialize empty client
+					var client = new Client({
+						id: null,
+						client_url: null,
+						client_name: null,
+						client_id: null,
+						client_secret: null,
+					});
+					context.editClient(client);
+				}, function(){
+					context.hideEditForm();
+				});
 			},
 		
 			// Adds a single client to the listing
 			addClient: function(client) {
 				var view = new ClientItemView({model: client});
 				this.$("table.client-list").append(view.render().el);
+
+				var context = this;
+				view.$(".col-4 a.edit").toggle(function() {
+					context.editClient(client);
+				}, function() {
+					context.hideEditForm();
+				});
+				
+				// Event binding for the delete link
+				view.$(".col-4 a.del").click({model: client, context: view}, this.deleteClient);
 			},
 		
 			// Iterates the clients list and adds each client to the list view
 			addClients: function() {
 				swiftriverClients.each(this.addClient, this);
+			},
+			
+			// Hides the edit form
+			hideEditForm: function() {
+				this.$("#addedit").slideUp();
+			},
+
+			// Edit client
+			editClient: function(client) {
+				var container = this.$("#addedit");
+				var view = new ClientDetailsView({model: client});
+
+				// Display the form in the addedit container
+				this.$("#addedit .edit-form-holder").html(view.render().el);
+				container.slideDown();
+
+				// Halt further event processing
+				return false;
+			},
+			
+			deleteClient: function(e) {
+				var view = e.data.context, model = e.data.model;
+
+				// Delete the client record
+				model.destroy({
+					wait: true,
+					success: function(response) {
+						view.$el.fadeOut();
+					}
+				});
+
+				return false;
 			},
 		
 			checkEmpty: function() {
