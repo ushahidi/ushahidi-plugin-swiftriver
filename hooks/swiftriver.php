@@ -48,9 +48,6 @@ class swiftriver {
 		// When a report (incident) is displayed on the frontend
 		Event::add('ushahidi_action.report_meta', array($this, 'display_drop_metadata'));
 		
-		// When a report is displayed on the admin console
-		// Event::add('ushahidi_action', array($this, 'admin_display_report'));
-		
 		// Styling for this plugin's settings pages
 		if (Router::$controller === 'swiftriver_settings')
 		{
@@ -82,14 +79,6 @@ class swiftriver {
 			// Render the view
 			$metadata_view->render(TRUE);
 		}
-	}
-	
-	/**
-	 * Executed when a report is displayed on the admin console
-	 */
-	public function admin_display_report()
-	{
-		
 	}
 	
 	/**
