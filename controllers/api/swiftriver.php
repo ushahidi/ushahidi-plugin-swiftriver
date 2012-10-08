@@ -73,23 +73,25 @@ class Swiftriver_Controller extends Template_Controller {
 
 				Kohana::log('debug', "Authorization succeeded. Verifying checksum...");
 
+				// Decode the drops payload for the server to recompute the checksum
+				// for verification
+				$drops = json_decode(base64_decode($post->drops), TRUE);
+
 				// Compute SHA256 hash_hmac of the request data - use client's private key
-				$server_checksum = $this->_get_request_hash($client_orm->client_secret, $post->drops);
-				
-				Kohana::log("debug", sprintf("Server-computed checksum: %s", $server_checksum));
+				$server_checksum = $this->_get_request_hash($client_orm->client_secret, $drops);
 
 				// Compare the two hash_hmac values - submitted vs computed
-				// if ($server_checksum !== $post->checksum)
-				// {
-				// 	Kohana::log('error', "Checksum verification failed. Invalid client checksum: ".$post->checksum);
-				// 
-				// 	header("Status: 401");
-				// 	echo json_encode(array(
-				// 	    "status" => "REQUEST_DENIED",
-				// 	    "message" => "Authorization failed"
-				// 	));
-				// 	return;
-				// }
+				if ($server_checksum !== $post->checksum)
+				{
+					Kohana::log('error', "Checksum verification failed. Invalid client checksum: ".$post->checksum);
+				
+					header("Status: 401");
+					echo json_encode(array(
+					    "status" => "REQUEST_DENIED",
+					    "message" => "Checksum verification failed."
+					));
+					return;
+				}
 
 				Kohana::log("debug", "Checksum verification succeeded.");
 
@@ -97,7 +99,6 @@ class Swiftriver_Controller extends Template_Controller {
 				// This step saves the drops and their tags
 				try
 				{
-					$drops = json_decode($post->drops, TRUE);
 					Kohana::log("debug", sprintf("Expecting %d reports to be created from the submitted drops", count($drops)));
 
 					if (Swiftriver_Client_Model::create_reports($client_orm, $drops))
@@ -168,7 +169,7 @@ class Swiftriver_Controller extends Template_Controller {
 	{
 		try
 		{
-			return hash_hmac("sha256", $drops, $client_secret);
+			return hash_hmac("sha256", json_encode($drops), $client_secret);
 		}
 		catch(Exception $e)
 		{
