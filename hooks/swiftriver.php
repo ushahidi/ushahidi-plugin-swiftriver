@@ -43,7 +43,7 @@ class swiftriver {
 	 */
 	public function register_events()
 	{
-		Kohana::log('info', "Registering swifriver event callbacks");
+		Kohana::log('info', "Registering swiftriver event callbacks");
 
 		// When a report (incident) is displayed on the frontend
 		Event::add('ushahidi_action.report_meta', array($this, 'display_drop_metadata'));
