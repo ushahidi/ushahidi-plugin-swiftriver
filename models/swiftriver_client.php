@@ -84,7 +84,7 @@ class Swiftriver_Client_Model extends ORM {
 			// If drop has no 'place_hash' property skip
 			if ( ! array_key_exists('place_hash', $drop))
 				continue;
-			
+
 			$drop_keys[$drop['droplet_hash']] = $drop;
 
 			// Get the locations

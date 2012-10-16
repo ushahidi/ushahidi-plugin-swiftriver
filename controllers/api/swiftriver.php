@@ -63,7 +63,7 @@ class Swiftriver_Controller extends Template_Controller {
 					Kohana::log('error', sprintf("Client authorization failed. Invalid client id: %s", $post->client_id));
 
 					// Invalid client id specified - Access denied
-					header("Status: 401");
+					header("HTTP/1.1 401 Authorization failed", TRUE, 401);
 					echo json_encode(array(
 					    "status" => "REQUEST_DENIED",
 					    "message" => "Authorization failed"
@@ -75,7 +75,7 @@ class Swiftriver_Controller extends Template_Controller {
 
 				// Decode the drops payload for the server to recompute the checksum
 				// for verification
-				$drops = json_decode(base64_decode($post->drops), TRUE);
+				$drops = base64_decode($post->drops);
 
 				// Compute SHA256 hash_hmac of the request data - use client's private key
 				$server_checksum = $this->_get_request_hash($client_orm->client_secret, $drops);
@@ -83,9 +83,10 @@ class Swiftriver_Controller extends Template_Controller {
 				// Compare the two hash_hmac values - submitted vs computed
 				if ($server_checksum !== $post->checksum)
 				{
+					Kohana::log('debug', "Server computed checksum: ".$server_checksum);
 					Kohana::log('error', "Checksum verification failed. Invalid client checksum: ".$post->checksum);
 				
-					header("Status: 401");
+					header("HTTP/1.1 401 Authorization failed", TRUE, 401);
 					echo json_encode(array(
 					    "status" => "REQUEST_DENIED",
 					    "message" => "Checksum verification failed."
@@ -94,6 +95,7 @@ class Swiftriver_Controller extends Template_Controller {
 				}
 
 				Kohana::log("debug", "Checksum verification succeeded.");
+				$drops = json_decode($drops, TRUE);
 
 				// Create reports (incidents) from the drops
 				// This step saves the drops and their tags
@@ -111,7 +113,7 @@ class Swiftriver_Controller extends Template_Controller {
 					else
 					{
 						// Unknown error occurred
-						header("Status: 500 Server Error");
+						header("HTTP/1.1 500 Server Error", TRUE, 500);
 						echo json_encode(array(
 							"status" => "INVALID_REQUEST",
 							"message" => "An unknown error has occurred. Please try again"
@@ -123,7 +125,7 @@ class Swiftriver_Controller extends Template_Controller {
 					Kohana::log("error", $e->getMessage());
 
 					// If fail return 400 status code
-					header("Status: 400 Bad request");
+					header("HTTP/1.1 400 Bad request", TRUE, 400);
 					echo json_encode(array(
 					    "status" => "INVALID_REQUEST",
 					    "message" => "An error was encountered while posting the drops"
@@ -136,7 +138,7 @@ class Swiftriver_Controller extends Template_Controller {
 				Kohana::log('error', "Request validation failed: ".Kohana::debug($post->errors()));
 
 				// Badly formed request - missing parameters
-				header("Status: 400 Bad Request");
+				header("HTTP/1.1 400 Bad Request", TRUE, 400);
 				echo json_encode(array(
 				    "status" => "INVALID_REQUEST",
 				    "message" => "Some parameters are missing from the request data",
@@ -148,7 +150,7 @@ class Swiftriver_Controller extends Template_Controller {
 		{
 			Kohana::log("error", "The client did not submit a HTTP POST request");
 
-			header("Status: 405 Method not allowed");
+			header("HTTP/1.1 405 Method not allowed", TRUE, 405);
 			echo json_encode(array(
 			    "status" => "INVALID_REQUEST",
 			    "message" => "Only HTTP POST requests are allowed"
@@ -169,7 +171,7 @@ class Swiftriver_Controller extends Template_Controller {
 	{
 		try
 		{
-			return hash_hmac("sha256", json_encode($drops), $client_secret);
+			return hash_hmac("sha256", $drops, $client_secret);
 		}
 		catch(Exception $e)
 		{
