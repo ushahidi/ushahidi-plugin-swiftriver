@@ -31,6 +31,24 @@ class Swiftriver_Controller extends Template_Controller {
 	{
 		parent::__construct();
 	}
+    
+    /**
+     * REST endpoint used to check whether this plugin is
+     * available on the Ushahidi deployment
+     */
+    public function ping()
+    {
+        header("Content-type:application/json; charset=utf-8");
+
+        // Response
+        $response = array(
+            'deployment' => Kohana::config('settings.site_name'),
+            'platform_version' => Kohana::config('settings.ushahidi_version'),
+            'plugin_version' => '0.1',
+        );
+
+        echo json_encode($response);
+    }
 	
 	/**
 	 * REST endpoint for receiving drops via HTTP POST
@@ -44,10 +62,10 @@ class Swiftriver_Controller extends Template_Controller {
 		{
 			// Validate the post data
 			$post = Validation::factory($_POST)
-			   ->pre_filter('trim')
-			   ->add_rules('checksum', 'required')
-			   ->add_rules('drops', 'required')
-			   ->add_rules('client_id', 'required');
+                ->pre_filter('trim')
+                ->add_rules('checksum', 'required')
+                ->add_rules('drops', 'required')
+                ->add_rules('client_id', 'required');
 
 			// Validate
 			if ($post->validate(FALSE))
@@ -65,8 +83,8 @@ class Swiftriver_Controller extends Template_Controller {
 					// Invalid client id specified - Access denied
 					header("HTTP/1.1 401 Authorization failed", TRUE, 401);
 					echo json_encode(array(
-					    "status" => "REQUEST_DENIED",
-					    "message" => "Authorization failed"
+                        "status" => "REQUEST_DENIED",
+                        "message" => "Authorization failed"
 					));
 					return;
 				}
@@ -88,8 +106,8 @@ class Swiftriver_Controller extends Template_Controller {
 				
 					header("HTTP/1.1 401 Authorization failed", TRUE, 401);
 					echo json_encode(array(
-					    "status" => "REQUEST_DENIED",
-					    "message" => "Checksum verification failed."
+                        "status" => "REQUEST_DENIED",
+                        "message" => "Checksum verification failed."
 					));
 					return;
 				}
@@ -106,8 +124,8 @@ class Swiftriver_Controller extends Template_Controller {
 					if (Swiftriver_Client_Model::create_reports($client_orm, $drops))
 					{
 						echo json_encode(array(
-						    "status" => "OK",
-						    "message" => "Drops successfully posted"
+                            "status" => "OK",
+                            "message" => "Drops successfully posted"
 						));
 					}
 					else
@@ -115,8 +133,8 @@ class Swiftriver_Controller extends Template_Controller {
 						// Unknown error occurred
 						header("HTTP/1.1 500 Server Error", TRUE, 500);
 						echo json_encode(array(
-							"status" => "INVALID_REQUEST",
-							"message" => "An unknown error has occurred. Please try again"
+                            "status" => "INVALID_REQUEST",
+                            "message" => "An unknown error has occurred. Please try again"
 						));
 					}
 				}
@@ -127,8 +145,8 @@ class Swiftriver_Controller extends Template_Controller {
 					// If fail return 400 status code
 					header("HTTP/1.1 400 Bad request", TRUE, 400);
 					echo json_encode(array(
-					    "status" => "INVALID_REQUEST",
-					    "message" => "An error was encountered while posting the drops"
+                        "status" => "INVALID_REQUEST",
+                        "message" => "An error was encountered while posting the drops"
 					));
 				}
 			}
@@ -140,9 +158,9 @@ class Swiftriver_Controller extends Template_Controller {
 				// Badly formed request - missing parameters
 				header("HTTP/1.1 400 Bad Request", TRUE, 400);
 				echo json_encode(array(
-				    "status" => "INVALID_REQUEST",
-				    "message" => "Some parameters are missing from the request data",
-				    "errors" => $post->errors()
+                    "status" => "INVALID_REQUEST",
+                    "message" => "Some parameters are missing from the request data",
+                    "errors" => $post->errors()
 				));
 			}
 		}
@@ -152,8 +170,8 @@ class Swiftriver_Controller extends Template_Controller {
 
 			header("HTTP/1.1 405 Method not allowed", TRUE, 405);
 			echo json_encode(array(
-			    "status" => "INVALID_REQUEST",
-			    "message" => "Only HTTP POST requests are allowed"
+                "status" => "INVALID_REQUEST",
+                "message" => "Only HTTP POST requests are allowed"
 			));
 		}
 	}
@@ -178,5 +196,5 @@ class Swiftriver_Controller extends Template_Controller {
 			Kohana::log('error', $e->getMessage());
 			return FALSE;
 		}
-	}
+	}    
 }
