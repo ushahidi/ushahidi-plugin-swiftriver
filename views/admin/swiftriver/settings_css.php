@@ -6,4 +6,9 @@
 .report-form .save-rep-btn {
     margin-left: 2px;
 }
+.green-box {
+	width: auto !important;
+	margin: 15px 21px 15px 0 !important;
+	padding: 9px 0 8px 8px;
+}
 </style>

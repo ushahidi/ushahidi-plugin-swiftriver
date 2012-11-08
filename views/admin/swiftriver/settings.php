@@ -84,12 +84,18 @@
 <?php echo form::open(); ?>
 	<input type="hidden" name="id" value="<%= id%>">
 	<div class="tab_form_item">
-		<strong><?php echo Kohana::lang("swiftriver.client_name"); ?></strong><br/>
-		<input type="text" name="client_name" value="<%= client_name%>" class="text" />
+		<h4>
+			<?php echo Kohana::lang("swiftriver.client_name"); ?><br/>
+			<span><?php echo Kohana::lang('swiftriver.client_name_tooltip'); ?></span>
+		</h4>
+		<input type="text" name="client_name" value="<%= client_name%>" class="text long2" />
 	</div>
 	<div style="clear: both;"></div>
 	<div class="tab_form_item">
-		<strong><?php echo Kohana::lang("swiftriver.client_url"); ?></strong><br/>
+		<h4>
+			<?php echo Kohana::lang("swiftriver.client_url"); ?><br/>
+			<span><?php echo Kohana::lang('swiftriver.client_url_tooltip'); ?></span>
+		</h4>
 		<input type="text" name="client_url" value="<%= client_url %>" class="text long" />
 	</div>
 	<div style="clear: both;"></div>
