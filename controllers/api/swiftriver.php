@@ -32,7 +32,7 @@ class Swiftriver_Controller extends Template_Controller {
 		parent::__construct();
 	}
     
-    /**
+	/**
 	 * REST endpoint used to check whether this plugin is
 	 * available on the Ushahidi deployment
 	 */
@@ -124,8 +124,8 @@ class Swiftriver_Controller extends Template_Controller {
 					if (Swiftriver_Client_Model::create_reports($client_orm, $drops))
 					{
 						echo json_encode(array(
-                            "status" => "OK",
-                            "message" => "Drops successfully posted"
+							"status" => "OK",
+							"message" => "Drops successfully posted"
 						));
 					}
 					else
@@ -170,8 +170,8 @@ class Swiftriver_Controller extends Template_Controller {
 
 			header("HTTP/1.1 405 Method not allowed", TRUE, 405);
 			echo json_encode(array(
-                "status" => "INVALID_REQUEST",
-                "message" => "Only HTTP POST requests are allowed"
+				"status" => "INVALID_REQUEST",
+				"message" => "Only HTTP POST requests are allowed"
 			));
 		}
 	}
